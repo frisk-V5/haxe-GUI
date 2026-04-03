@@ -1,5 +1,6 @@
 -cp src
 -main Main
 -lib haxeui-core
--lib haxeui-html5
--js main.js
+-lib haxeui-hxwidgets
+-lib hxWidgets
+-cpp export/cpp
