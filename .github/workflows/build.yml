@@ -1,4 +1,4 @@
-name: Ultimate Cross-Platform Build
+name: Build Windows and HTML5
 
 on: [push, pull_request]
 
@@ -9,8 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3OSすべてをターゲットにする
-        os: [windows-latest, macos-13, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
 
     steps:
       - name: Checkout
@@ -21,23 +20,7 @@ jobs:
         with:
           haxe-version: 4.3.4
 
-      # --- 各OSごとの依存ライブラリ (wxWidgets用) ---
-      - name: Install Native Dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install wxwidgets-msvc -y
-
-      - name: Install Native Dependencies (macOS)
-        if: matrix.os == 'macos-13'
-        run: brew install wxwidgets
-
-      - name: Install Native Dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev libwxgtk3.2-dev
-
-      # --- 全プラットフォーム共通のHaxeライブラリ ---
-      - name: Install Haxe Libraries
+      - name: Install Libraries
         run: |
           haxelib install hxcpp --quiet
           haxelib install hxWidgets --quiet
@@ -45,23 +28,20 @@ jobs:
           haxelib install haxeui-hxwidgets --quiet
           haxelib install haxeui-html5 --quiet
 
-      # --- 1. ネイティブアプリのビルド (3OS分) ---
-      - name: Build Native App (C++)
-        run: haxe build.hxml -D wxWidgets-static
-
-      # --- 2. HTML5版のビルド (どのOSのジョブでも1回通ればOK) ---
-      # UbuntuのついでにHTML5もビルドさせる設定
-      - name: Build HTML5 version
-        if: matrix.os == 'ubuntu-latest'
+      # Windows専用：ネイティブビルド
+      - name: Build Windows (C++)
+        if: matrix.os == 'windows-latest'
         run: |
-          haxe -cp src -main Main -lib haxeui-core -lib haxeui-html5 -js export/html5/main.js -D html5
+          haxelib run hxWidgets setup
+          haxe build_windows.hxml
 
-      # --- 3. 成果物の保存 (ビルド成功後にダウンロード可能にする) ---
+      # Ubuntu専用：HTML5ビルド
+      - name: Build HTML5
+        if: matrix.os == 'ubuntu-latest'
+        run: haxe build_html5.hxml
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}
-          path: |
-            export/cpp/
-            export/html5/
-
+          name: output-${{ matrix.os }}
+          path: export/
