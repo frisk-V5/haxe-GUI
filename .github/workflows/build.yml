@@ -9,7 +9,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOSは確実に動く13 (Intel) を指定してエラーを回避
         os: [windows-latest, macos-13, ubuntu-latest]
 
     steps:
@@ -21,34 +20,32 @@ jobs:
         with:
           haxe-version: 4.3.4
 
-      # --- 各OSごとのGUIライブラリ(wxWidgets)インストール ---
-      
-      - name: Install wxWidgets (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install wxwidgets-msvc --version=3.1.5 -y
-
-      - name: Install wxWidgets (macOS)
-        if: matrix.os == 'macos-13'
-        run: brew install wxwidgets
-
-      - name: Install wxWidgets (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      # --- 依存GUIライブラリのインストール ---
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev libwxgtk3.2-dev
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            choco install wxwidgets-msvc -y
+          elif [ "${{ matrix.os }}" = "macos-13" ]; then
+            brew install wxwidgets
+          else
+            sudo apt-get update
+            sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev libwxgtk3.2-dev
+          fi
+        shell: bash
 
-      # --- Haxeライブラリの準備 ---
-
+      # --- Haxeライブラリのインストールとセットアップ ---
       - name: Install Haxe Libraries
         run: |
           haxelib install hxcpp --quiet
           haxelib install hxWidgets --quiet
           haxelib install haxeui-core --quiet
           haxelib install haxeui-hxwidgets --quiet
+          # WindowsでwxWidgetsのパスを自動検出させる
+          haxelib run hxWidgets setup
 
       - name: Build App
-        # Windowsの場合のみ、wxWidgetsのパスを通す設定が必要な場合がありますが、まずはこれで実行
-        run: haxe build.hxml
+        # Windowsのヘッダー不一致を避けるため静的リンクフラグを強制
+        run: haxe build.hxml -D wxWidgets-static
 
       - name: Upload Artifact
         if: success()
