@@ -3,4 +3,5 @@
 -lib haxeui-core
 -lib haxeui-hxwidgets
 -lib hxWidgets
--cpp export/cpp
+-cpp export/windows
+-D wxWidgets-static
