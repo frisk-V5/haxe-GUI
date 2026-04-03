@@ -1,16 +1,10 @@
-name: Build Windows and HTML5
+name: Build EXE and HTML5
 
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,27 +15,25 @@ jobs:
           haxe-version: 4.3.4
 
       - name: Install Libraries
+        # 必要なライブラリだけを確実にインストール
         run: |
           haxelib install hxcpp --quiet
-          haxelib install hxWidgets --quiet
           haxelib install haxeui-core --quiet
-          haxelib install haxeui-hxwidgets --quiet
           haxelib install haxeui-html5 --quiet
+          haxelib install haxeui-hxwidgets --quiet
+          haxelib install hxWidgets --quiet
 
-      # Windows専用：ネイティブビルド
-      - name: Build Windows (C++)
-        if: matrix.os == 'windows-latest'
-        run: |
-          haxelib run hxWidgets setup
-          haxe build_windows.hxml
-
-      # Ubuntu専用：HTML5ビルド
       - name: Build HTML5
-        if: matrix.os == 'ubuntu-latest'
-        run: haxe build_html5.hxml
+        # HTML5版の書き出し
+        run: haxe -cp src -main Main -lib haxeui-core -lib haxeui-html5 -D html5 -js export/html5/main.js
+
+      - name: Build Windows EXE
+        # Windowsネイティブ(.exe)の書き出し
+        # 依存関係で止まらないよう、フラグを明示
+        run: haxe -cp src -main Main -lib haxeui-core -lib haxeui-hxwidgets -lib hxWidgets -D hxwidgets -cpp export/windows -D wxWidgets-static
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: output-${{ matrix.os }}
+          name: Build-Output
           path: export/
