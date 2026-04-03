@@ -4,4 +4,3 @@
 -lib haxeui-hxwidgets
 -lib hxWidgets
 -cpp export/cpp
--D HXCPP_M64
