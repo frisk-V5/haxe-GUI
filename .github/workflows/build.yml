@@ -1,0 +1,43 @@
+name: Cross-Platform Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Windows, macOS, Ubuntu(Linux) の3環境で実行
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Haxe
+        uses: kyoheiu/setup-haxe@v1.2.1
+        with:
+          haxe-version: 4.3.4
+
+      - name: Install Dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev
+
+      - name: Install Haxe Libraries
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib install hxWidgets --quiet
+          haxelib install haxeui-core --quiet
+          haxelib install haxeui-hxwidgets --quiet
+
+      - name: Build App
+        run: haxe build.hxml
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-${{ matrix.os }}
+          path: export/cpp/
