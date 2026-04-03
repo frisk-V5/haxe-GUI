@@ -7,9 +7,10 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false  # 1つがコケても他を止めない
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # macOSは確実に動く13 (Intel) を指定してエラーを回避
+        os: [windows-latest, macos-13, ubuntu-latest]
 
     steps:
       - name: Checkout
@@ -20,14 +21,25 @@ jobs:
         with:
           haxe-version: 4.3.4
 
-      - name: Install Dependencies (Ubuntu)
+      # --- 各OSごとのGUIライブラリ(wxWidgets)インストール ---
+      
+      - name: Install wxWidgets (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install wxwidgets-msvc --version=3.1.5 -y
+
+      - name: Install wxWidgets (macOS)
+        if: matrix.os == 'macos-13'
+        run: brew install wxwidgets
+
+      - name: Install wxWidgets (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev
+          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libgc-dev libwxgtk3.2-dev
+
+      # --- Haxeライブラリの準備 ---
 
       - name: Install Haxe Libraries
-        # 実行権限などの問題を避けるため、1つずつ確実に
         run: |
           haxelib install hxcpp --quiet
           haxelib install hxWidgets --quiet
@@ -35,6 +47,7 @@ jobs:
           haxelib install haxeui-hxwidgets --quiet
 
       - name: Build App
+        # Windowsの場合のみ、wxWidgetsのパスを通す設定が必要な場合がありますが、まずはこれで実行
         run: haxe build.hxml
 
       - name: Upload Artifact
