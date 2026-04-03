@@ -1,36 +1,33 @@
 package;
 
-import js.Browser;
-import js.html.ButtonElement;
-import js.html.DivElement;
+import haxe.ui.Toolkit;
+import haxe.ui.components.Button;
+import haxe.ui.components.Label;
+import haxe.ui.containers.VBox;
 
 class Main {
-    public static function main() {
-        var document = Browser.document;
+    public static function main() { 
+        Toolkit.init();
 
-        // コンテナ作成
-        var root = document.createDivElement();
-        root.style.padding = "20px";
+        var root = new VBox();
+        root.padding = 20; 
+        
+        var label = new Label();
+        label.text = "Haxe GUI";
+        label.styleString = "font-size: 20px; color: #333;";
+        root.addComponent(label);
+        
+        var button = new Button();
+        button.text = "ビルド成功を確認";
+        button.marginTop = 10;
 
-        // ラベル（div）作成
-        var label = document.createDivElement();
-        label.innerText = "Haxe Native GUI";
-        label.style.fontSize = "20px";
-        label.style.color = "#333";
-        root.appendChild(label);
-
-        // ボタン作成
-        var button = document.createButtonElement();
-        button.innerText = "ビルド成功を確認";
-        button.style.marginTop = "10px";
-        button.onclick = function(e) {
-            label.innerText = "動作は正常です";
-            label.style.color = "#27ae60";
-            label.style.fontWeight = "bold";
+        button.onClick = function(e){
+            label.text ="動作は正常です";
+            label.styleString = "color: #27ae60; font-weight: bold;";
             trace("Button clicked!");
         };
-        root.appendChild(button);
+        root.addComponent(button);
 
-        document.body.appendChild(root);
+        Toolkit.screen.addComponent(root);
     }
 }
